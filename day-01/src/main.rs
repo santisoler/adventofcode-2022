@@ -37,6 +37,13 @@ fn read_file(fname: &String) -> String {
     data_str
 }
 
+fn update_highest_calories(highest_calories: &mut u32, calories: &u32) {
+    // Update the highest calories if calories is greater than it
+    if *highest_calories < *calories {
+        *highest_calories = *calories;
+    }
+}
+
 fn solve_part1(fname: &String) -> u32 {
     // Read data file
     let data = read_file(&fname);
@@ -46,19 +53,29 @@ fn solve_part1(fname: &String) -> u32 {
     let mut calories: u32 = 0;
     for line in data.lines() {
         if line.trim().is_empty() {
-            if highest_calories < calories {
-                highest_calories = calories;
-            }
+            update_highest_calories(&mut highest_calories, &calories);
             calories = 0;
         } else {
             calories += line.parse::<u32>().unwrap();
         }
     }
     // Check again for the last set of calories in the file
-    if highest_calories < calories {
-        highest_calories = calories;
-    }
+    update_highest_calories(&mut highest_calories, &calories);
     highest_calories
+}
+
+fn update_top_three_calories(top_three: &mut [u32; 3], calories: &u32) {
+    // Update the top three highest calories
+    if *calories > top_three[0] {
+        top_three[2] = top_three[1];
+        top_three[1] = top_three[0];
+        top_three[0] = *calories;
+    } else if *calories > top_three[1] {
+        top_three[2] = top_three[1];
+        top_three[1] = *calories;
+    } else if *calories > top_three[2] {
+        top_three[2] = *calories;
+    }
 }
 
 fn solve_part2(fname: &String) -> u32 {
@@ -66,39 +83,19 @@ fn solve_part2(fname: &String) -> u32 {
     let data = read_file(&fname);
     // Find out how many calories are being carried by the Elf that carries
     // the most calories
-    let mut first: u32 = 0;
-    let mut second: u32 = 0;
-    let mut third: u32 = 0;
+    let mut top_three: [u32; 3] = [0; 3];
     let mut calories: u32 = 0;
     for line in data.lines() {
         if line.trim().is_empty() {
-            if calories > first {
-                third = second;
-                second = first;
-                first = calories;
-            } else if calories > second {
-                third = second;
-                second = calories;
-            } else if calories > third {
-                third = calories;
-            }
+            update_top_three_calories(&mut top_three, &calories);
             calories = 0;
         } else {
             calories += line.parse::<u32>().unwrap();
         }
     }
     // Check again for the last set of calories in the file
-    if calories > first {
-        third = second;
-        second = first;
-        first = calories;
-    } else if calories > second {
-        third = second;
-        second = calories;
-    } else if calories > third {
-        third = calories;
-    }
-    first + second + third
+    update_top_three_calories(&mut top_three, &calories);
+    top_three.iter().sum()
 }
 
 fn main() {
