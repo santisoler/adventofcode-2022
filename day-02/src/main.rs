@@ -42,43 +42,25 @@ fn solve_part1(fname: &String) -> i32 {
     let data = read_file(&fname);
     // Compute score
     let mut score: i32 = 0;
+    let match_matrix = [[3, 6 ,0], [0, 3, 6], [6, 0 ,3]];
     for line in data.lines() {
         let play = line.split_whitespace().collect::<Vec<&str>>();
-        // Add to score based on which game I played
-        score += match play[1] {
-            "X" => 1,
-            "Y" => 2,
-            "Z" => 3,
+        let my_play: usize = match play[1] {
+            "X" => 0,
+            "Y" => 1,
+            "Z" => 2,
             _ => panic!("Found invalid play '{}'", play[1]),
         };
-        // Add to score based on how the two players played
-        match play[0] {
-            "A" => {
-                score += match play[1] {
-                    "X" => 3,
-                    "Y" => 6,
-                    "Z" => 0,
-                    _ => panic!("Found invalid play '{}'", play[1]),
-                }
-            }
-            "B" => {
-                score += match play[1] {
-                    "X" => 0,
-                    "Y" => 3,
-                    "Z" => 6,
-                    _ => panic!("Found invalid play '{}'", play[1]),
-                }
-            }
-            "C" => {
-                score += match play[1] {
-                    "X" => 6,
-                    "Y" => 0,
-                    "Z" => 3,
-                    _ => panic!("Found invalid play '{}'", play[1]),
-                }
-            }
-            _ => panic!("Found invalid play '{}'", play[0]),
-        }
+        let opponents_play: usize = match play[0] {
+            "A" => 0,
+            "B" => 1,
+            "C" => 2,
+            _ => panic!("Found invalid play '{}'", play[1]),
+        };
+        // Add to score based on which game I played
+        score += my_play as i32 + 1;
+        // Add to score based on match results
+        score += match_matrix[opponents_play][my_play];
     }
     score
 }
