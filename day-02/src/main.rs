@@ -13,12 +13,12 @@ mod tests {
         assert_eq!(result, 15);
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     let fname = String::from("data/test_input");
-    //     let result = solve_part2(&fname);
-    //     assert_eq!(result, 45000);
-    // }
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 12);
+    }
 }
 
 fn read_file(fname: &String) -> String {
@@ -83,6 +83,51 @@ fn solve_part1(fname: &String) -> i32 {
     score
 }
 
+fn solve_part2(fname: &String) -> i32 {
+    // Read data file
+    let data = read_file(&fname);
+    // Compute score
+    let mut score: i32 = 0;
+    for line in data.lines() {
+        let play = line.split_whitespace().collect::<Vec<&str>>();
+        // Add to score
+        match play[1] {
+            // I need to loose
+            // (no score from the match, just the score from my choice)
+            "X" => {
+                score += match play[0] {
+                    "A" => 3,
+                    "B" => 1,
+                    "C" => 2,
+                    _ => panic!("Found invalid play '{}'", play[0]),
+                }
+            }
+            // I need to draw
+            // (3 points from draw score from my choice)
+            "Y" => {
+                score += match play[0] {
+                    "A" => 3 + 1,
+                    "B" => 3 + 2,
+                    "C" => 3 + 3,
+                    _ => panic!("Found invalid play '{}'", play[0]),
+                }
+            }
+            // I need to win
+            // (6 points from draw score from my choice)
+            "Z" => {
+                score += match play[0] {
+                    "A" => 6 + 2,
+                    "B" => 6 + 3,
+                    "C" => 6 + 1,
+                    _ => panic!("Found invalid play '{}'", play[0]),
+                }
+            }
+            _ => panic!("Found invalid play '{}'", play[1]),
+        }
+    }
+    score
+}
+
 fn main() {
     let fname = String::from("data/input");
 
@@ -91,6 +136,6 @@ fn main() {
     println!("Solution to part 1: {}", result);
 
     // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
