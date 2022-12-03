@@ -2,6 +2,20 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+// Define a matrix that holds the match scores.
+// Each row correspond to the opponent's play. Each column corresponds to my
+// play. E.g.: if the opponent plays paper (row 1) and I play scissors (col 2)
+// I win and get 6 points.
+const MATCH_SCORES: [[i32; 3]; 3] = [[3, 6, 0], [0, 3, 6], [6, 0, 3]];
+
+// Define a matrix that holds my play scores based on expected outcomes.
+// Each row correspond to the opponent's play. Each column corresponds to the
+// expected outcome:
+// loose, draw and win.
+// play. E.g.: if the opponent plays paper (row 1) and I need to win (col 2)
+// I need to play scissors, obtaining a score of 3 for my play.
+const PLAY_SCORES: [[i32; 3]; 3] = [[3, 1, 2], [1, 2, 3], [2, 3, 1]];
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -42,9 +56,10 @@ fn solve_part1(fname: &String) -> i32 {
     let data = read_file(&fname);
     // Compute score
     let mut score: i32 = 0;
-    let match_matrix = [[3, 6 ,0], [0, 3, 6], [6, 0 ,3]];
     for line in data.lines() {
         let play = line.split_whitespace().collect::<Vec<&str>>();
+        // Transform plays in column and rows indices for the MATCH_MATRIX
+        // (rows are for opponent's play, columns for my play)
         let my_play: usize = match play[1] {
             "X" => 0,
             "Y" => 1,
@@ -60,7 +75,7 @@ fn solve_part1(fname: &String) -> i32 {
         // Add to score based on which game I played
         score += my_play as i32 + 1;
         // Add to score based on match results
-        score += match_matrix[opponents_play][my_play];
+        score += MATCH_SCORES[opponents_play][my_play];
     }
     score
 }
@@ -72,40 +87,24 @@ fn solve_part2(fname: &String) -> i32 {
     let mut score: i32 = 0;
     for line in data.lines() {
         let play = line.split_whitespace().collect::<Vec<&str>>();
-        // Add to score
-        match play[1] {
-            // I need to loose
-            // (no score from the match, just the score from my choice)
-            "X" => {
-                score += match play[0] {
-                    "A" => 3,
-                    "B" => 1,
-                    "C" => 2,
-                    _ => panic!("Found invalid play '{}'", play[0]),
-                }
-            }
-            // I need to draw
-            // (3 points from draw score from my choice)
-            "Y" => {
-                score += match play[0] {
-                    "A" => 3 + 1,
-                    "B" => 3 + 2,
-                    "C" => 3 + 3,
-                    _ => panic!("Found invalid play '{}'", play[0]),
-                }
-            }
-            // I need to win
-            // (6 points from draw score from my choice)
-            "Z" => {
-                score += match play[0] {
-                    "A" => 6 + 2,
-                    "B" => 6 + 3,
-                    "C" => 6 + 1,
-                    _ => panic!("Found invalid play '{}'", play[0]),
-                }
-            }
+        // Transform opponent's play in rows indices for the PLAY_SCORES matrix
+        let opponents_play: usize = match play[0] {
+            "A" => 0,
+            "B" => 1,
+            "C" => 2,
+            _ => panic!("Found invalid play '{}'", play[0]),
+        };
+        // Transform expected results in rows indices for the PLAY_SCORES matrix
+        let expected_result: usize = match play[1] {
+            "X" => 0,
+            "Y" => 1,
+            "Z" => 2,
             _ => panic!("Found invalid play '{}'", play[1]),
-        }
+        };
+        // Add to score based on which game I played
+        score += PLAY_SCORES[opponents_play][expected_result];
+        // Add to score based on match results
+        score += expected_result as i32 * 3;
     }
     score
 }
