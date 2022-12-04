@@ -30,12 +30,12 @@ mod tests {
         assert_eq!(result, 157);
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     let fname = String::from("data/test_input");
-    //     let result = solve_part2(&fname);
-    //     assert_eq!(result, 12);
-    // }
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 70);
+    }
 }
 
 fn read_file(fname: &String) -> String {
@@ -76,6 +76,16 @@ fn compute_priority(item_type: &char) -> u32 {
     }
 }
 
+fn find_repeated_type_in_group(group: &Vec<&str>) -> char {
+    // Find repeated item within group
+    for item in group[0].chars() {
+        if group[1].contains(item) & group[2].contains(item) {
+            return item as char;
+        }
+    }
+    panic!("No repeated item type was found in {:?}", group);
+}
+
 fn solve_part1(fname: &String) -> u32 {
     // Read data file
     let data = read_file(&fname);
@@ -83,6 +93,23 @@ fn solve_part1(fname: &String) -> u32 {
     for line in data.lines() {
         let repeated_item_type = find_repeated_item_type(&line);
         priorities += compute_priority(&repeated_item_type);
+    }
+    priorities
+}
+
+fn solve_part2(fname: &String) -> u32 {
+    // Read data file
+    let data = read_file(&fname);
+    let mut priorities: u32 = 0;
+    let mut group = vec![];
+    for (i, line) in data.lines().enumerate() {
+        group.push(line);
+        if i % 3 == 2 {
+            group.push(&line);
+            let repeated_item_type = find_repeated_type_in_group(&group);
+            priorities += compute_priority(&repeated_item_type);
+            group.clear();
+        }
     }
     priorities
 }
@@ -95,6 +122,6 @@ fn main() {
     println!("Solution to part 1: {}", result);
 
     // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
