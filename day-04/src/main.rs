@@ -25,18 +25,30 @@ mod tests {
     }
 
     #[test]
+    fn test_check_overlap_pairs() {
+        let pairs: Vec<u32> = Vec::from([1, 2, 3, 4]);
+        assert_eq!(check_pairs_overlap(&pairs), false);
+        let pairs: Vec<u32> = Vec::from([6, 8, 3, 4]);
+        assert_eq!(check_pairs_overlap(&pairs), false);
+        let pairs: Vec<u32> = Vec::from([1, 4, 4, 5]);
+        assert_eq!(check_pairs_overlap(&pairs), true);
+        let pairs: Vec<u32> = Vec::from([4, 5, 3, 5]);
+        assert_eq!(check_pairs_overlap(&pairs), true);
+    }
+
+    #[test]
     fn test_part1() {
         let fname = String::from("data/test_input");
         let result = solve_part1(&fname);
         assert_eq!(result, 2);
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     let fname = String::from("data/test_input");
-    //     let result = solve_part2(&fname);
-    //     assert_eq!(result, 70);
-    // }
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 4);
+    }
 }
 
 fn read_file(fname: &String) -> String {
@@ -75,6 +87,22 @@ fn check_pairs_fully_contained(pairs: &Vec<u32>) -> bool {
     return false;
 }
 
+fn check_pairs_overlap(pairs: &Vec<u32>) -> bool {
+    if (pairs[0] <= pairs[2]) & (pairs[2] <= pairs[1]) {
+        return true;
+    }
+    if (pairs[0] <= pairs[3]) & (pairs[3] <= pairs[1]) {
+        return true;
+    }
+    if (pairs[2] <= pairs[0]) & (pairs[0] <= pairs[3]) {
+        return true;
+    }
+    if (pairs[2] <= pairs[1]) & (pairs[1] <= pairs[3]) {
+        return true;
+    }
+    return false;
+}
+
 fn solve_part1(fname: &String) -> u32 {
     // Read data file
     let file_content = read_file(&fname);
@@ -88,6 +116,19 @@ fn solve_part1(fname: &String) -> u32 {
     n_contained_pairs
 }
 
+fn solve_part2(fname: &String) -> u32 {
+    // Read data file
+    let file_content = read_file(&fname);
+    let mut n_overlap_pairs: u32 = 0;
+    for line in file_content.lines() {
+        let pairs = parse_line(&line);
+        if check_pairs_overlap(&pairs) {
+            n_overlap_pairs += 1;
+        }
+    }
+    n_overlap_pairs
+}
+
 fn main() {
     let fname = String::from("data/input");
 
@@ -96,6 +137,6 @@ fn main() {
     println!("Solution to part 1: {}", result);
 
     // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
