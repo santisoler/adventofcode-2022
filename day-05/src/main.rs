@@ -13,12 +13,12 @@ mod tests {
         assert_eq!(result, "CMZ");
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     let fname = String::from("data/test_input");
-    //     let result = solve_part2(&fname);
-    //     assert_eq!(result, 4);
-    // }
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, "MCD");
+    }
 }
 
 fn read_file(fname: &String) -> String {
@@ -107,6 +107,33 @@ fn solve_part1(fname: &String) -> String {
     message.iter().collect::<String>()
 }
 
+fn solve_part2(fname: &String) -> String {
+    // Read data file
+    let file_content = read_file(&fname);
+    let mut crates = parse_location_of_crates(&file_content);
+    let mut read_move = false;
+    for line in file_content.lines() {
+        if line.is_empty(){
+            read_move = true;
+            continue
+        }
+        if read_move {
+            let movements = parse_move(&line);
+            let mut tmp: Vec<char> = Vec::new();
+            for _ in 0..movements.0 {
+                tmp.push(crates[movements.1 - 1].pop().expect("Cannot pop crate"));
+            };
+            tmp.reverse();
+            crates[movements.2 - 1].extend(tmp);
+        }
+    }
+    let mut message: Vec<char> = Vec::new();
+    for column in crates.iter() {
+        message.push(column.last().expect("no last element").clone())
+    }
+    message.iter().collect::<String>()
+}
+
 fn main() {
     let fname = String::from("data/input");
 
@@ -115,6 +142,6 @@ fn main() {
     println!("Solution to part 1: {}", result);
 
     // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
