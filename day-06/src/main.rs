@@ -25,12 +25,12 @@ mod tests {
         assert_eq!(result, 7);
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     let fname = String::from("data/test_input");
-    //     let result = solve_part2(&fname);
-    //     assert_eq!(result, "MCD");
-    // }
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 19);
+    }
 }
 
 fn read_file(fname: &String) -> String {
@@ -67,10 +67,31 @@ fn solve_part1(fname: &String) -> u32 {
     let signal = file_content.replace("\n", "");
     // Find the marker position
     let mut position: u32 = 0;
-    for i in 3..signal.len() {
+    for i in (4 - 1)..signal.len() {
         // Check if there are non-repeated characters in the current
         // sequence of four elements in the signal
-        if check_unique_chars(&signal[i - 3..i + 1]) {
+        if check_unique_chars(&signal[i - (4 - 1)..i + 1]) {
+            // Found marker!
+            // (need to add 1 because in Rust indices start in zero)
+            position = i as u32 + 1;
+            break;
+        }
+    }
+    // Return marker position
+    position
+}
+
+fn solve_part2(fname: &String) -> u32 {
+    // Read data file
+    let file_content = read_file(&fname);
+    // Convert the signal into a vec
+    let signal = file_content.replace("\n", "");
+    // Find the marker position
+    let mut position: u32 = 0;
+    for i in (14 - 1)..signal.len() {
+        // Check if there are non-repeated characters in the current
+        // sequence of four elements in the signal
+        if check_unique_chars(&signal[i - (14 - 1)..i + 1]) {
             // Found marker!
             // (need to add 1 because in Rust indices start in zero)
             position = i as u32 + 1;
@@ -90,6 +111,6 @@ fn main() {
     println!("Solution to part 1: {}", result);
 
     // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
