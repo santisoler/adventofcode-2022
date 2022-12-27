@@ -52,12 +52,12 @@ mod tests {
         assert_eq!(result, 21);
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     let fname = String::from("data/test_input");
-    //     let result = solve_part2(&fname);
-    //     assert_eq!(result, 24933642);
-    // }
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 8);
+    }
 }
 
 fn read_file(fname: &String) -> String {
@@ -143,6 +143,64 @@ fn is_visible_from_down(forest: &Vec<Vec<u32>>, row: &usize, column: &usize) -> 
     true
 }
 
+fn get_scenic_score(forest: &Vec<Vec<u32>>, row: &usize, column: &usize) -> u32 {
+    // Compute the scenic score of a given tree
+    get_scenic_score_left(&forest, &row, &column)
+        * get_scenic_score_right(&forest, &row, &column)
+        * get_scenic_score_up(&forest, &row, &column)
+        * get_scenic_score_down(&forest, &row, &column)
+}
+
+fn get_scenic_score_right(forest: &Vec<Vec<u32>>, row: &usize, column: &usize) -> u32 {
+    // Compute the scenic score for the right direction
+    let ncolumns = forest[*row].len();
+    let mut score: u32 = 0;
+    for j in column + 1..ncolumns {
+        score += 1;
+        if forest[*row][*column] <= forest[*row][j] {
+            break;
+        }
+    }
+    score
+}
+
+fn get_scenic_score_left(forest: &Vec<Vec<u32>>, row: &usize, column: &usize) -> u32 {
+    // Compute the scenic score for the left direction
+    let mut score: u32 = 0;
+    for j in (0..*column).rev() {
+        score += 1;
+        if forest[*row][*column] <= forest[*row][j] {
+            break;
+        }
+    }
+    score
+}
+
+fn get_scenic_score_up(forest: &Vec<Vec<u32>>, row: &usize, column: &usize) -> u32 {
+    // Compute the scenic score for the up direction
+    let mut score: u32 = 0;
+    for i in (0..*row).rev() {
+        score += 1;
+        if forest[*row][*column] <= forest[i][*column] {
+            break;
+        }
+    }
+    score
+}
+
+fn get_scenic_score_down(forest: &Vec<Vec<u32>>, row: &usize, column: &usize) -> u32 {
+    // Compute the scenic score for the down direction
+    let nrows = forest.len();
+    let mut score: u32 = 0;
+    for i in row + 1..nrows {
+        score += 1;
+        if forest[*row][*column] <= forest[i][*column] {
+            break;
+        }
+    }
+    score
+}
+
 fn solve_part1(fname: &String) -> u32 {
     // Read data file
     let data = read_file(&fname);
@@ -162,15 +220,34 @@ fn solve_part1(fname: &String) -> u32 {
     n_visible_trees
 }
 
+fn solve_part2(fname: &String) -> u32 {
+    // Read data file
+    let data = read_file(&fname);
+    // Parse input file
+    let forest = parse_file_to_2d_array(&data);
+    // Compute the highest scenic score
+    let nrows = forest.len();
+    let ncolumns = forest[0].len();
+    let mut highest_score: u32 = 0;
+    for i in 1..nrows - 1 {
+        for j in 1..ncolumns - 1 {
+            let score = get_scenic_score(&forest, &i, &j);
+            if highest_score < score {
+                highest_score = score;
+            };
+        }
+    }
+    highest_score
+}
+
 fn main() {
     let fname = String::from("data/input");
-    // let fname = String::from("data/test_input");
 
     // part 1
     let result = solve_part1(&fname);
     println!("Solution to part 1: {}", result);
 
     // // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
