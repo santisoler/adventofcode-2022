@@ -13,12 +13,19 @@ mod tests {
         assert_eq!(result, 13);
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     let fname = String::from("data/test_input");
-    //     let result = solve_part2(&fname);
-    //     assert_eq!(result, 8);
-    // }
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 1);
+    }
+
+    #[test]
+    fn test_part2_larger() {
+        let fname = String::from("data/test_input_2");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 36);
+    }
 }
 
 fn read_file(fname: &String) -> String {
@@ -101,15 +108,56 @@ fn solve_part1(fname: &String) -> u32 {
     visited.len() as u32
 }
 
+fn update_knots_positions(knots: &mut Vec<[i32; 2]>) -> () {
+    // Update the positions of every knot after the head has been moved
+    for i in 1..knots.len() {
+        let head = knots[i - 1].clone();
+        update_tail_position(&head, &mut knots[i]);
+    }
+}
+
+fn solve_part2(fname: &String) -> u32 {
+    // Read data file
+    let data = read_file(&fname);
+    // Define starting positions for the head and the multiple knots. The first element is the
+    // head, the 10th is the tail.
+    let mut knots: Vec<[i32; 2]> = vec![[0, 0]; 10];
+    // Define a vector with the positions that the tail (the last knot) visited
+    // (initialize it with the initial position of tail)
+    let mut visited: Vec<[i32; 2]> = vec![knots.last().unwrap().clone()];
+    // Start reading the movement instructions
+    for line in data.lines() {
+        let movements: usize = line.split_whitespace().last().unwrap().parse().unwrap();
+        let direction = line.split_whitespace().nth(0).unwrap();
+        for _ in 0..movements {
+            // Update the position of the head
+            match direction {
+                "R" => knots[0][0] += 1,
+                "L" => knots[0][0] -= 1,
+                "U" => knots[0][1] += 1,
+                "D" => knots[0][1] -= 1,
+                _ => panic!("Invalid movement direction '{}'", direction),
+            }
+            // Update position of the knots
+            update_knots_positions(&mut knots);
+            // Add the new position of the tail to visited if it hasn't been visited
+            let tail_position = knots.last().unwrap();
+            if !visited.contains(&tail_position) {
+                visited.push(tail_position.clone())
+            }
+        }
+    }
+    visited.len() as u32
+}
+
 fn main() {
     let fname = String::from("data/input");
-    // let fname = String::from("data/test_input");
 
     // part 1
     let result = solve_part1(&fname);
     println!("Solution to part 1: {}", result);
 
     // // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
