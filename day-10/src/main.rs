@@ -12,13 +12,6 @@ mod tests {
         let result = solve_part1(&fname);
         assert_eq!(result, 13140);
     }
-
-    // #[test]
-    // fn test_part2() {
-    //     let fname = String::from("data/test_input");
-    //     let result = solve_part2(&fname);
-    //     assert_eq!(result, 1);
-    // }
 }
 
 fn read_file(fname: &String) -> String {
@@ -76,6 +69,53 @@ fn solve_part1(fname: &String) -> i64 {
     signal_strength
 }
 
+fn draw_pixel_on_crt(crt: &mut [char; 40 * 6], cycle: &u64, x: &i64) {
+    // Draw pixel at the given position based on the location of x
+    //
+    // The position of the pixel based on the cycle
+    // Get the horizontal position of the current pixel
+    let horizontal_position: i64 = *cycle as i64 % 40;
+    if (x - horizontal_position).abs() <= 1 {
+        crt[*cycle as usize] = '#';
+    }
+}
+
+fn solve_part2(fname: &String) -> [char; 40 * 6] {
+    // Read data file
+    let data = read_file(&fname);
+    // Initialize variables
+    let mut cycle: u64 = 0;
+    let mut x: i64 = 1;
+    let mut crt: [char; 40 * 6] = ['.'; 40 * 6];
+    // Read instructions
+    for line in data.lines() {
+        let instruction = line.split_whitespace().nth(0).unwrap();
+        match instruction {
+            "noop" => {
+                // Start current cycle and draw pixel in crt.
+                draw_pixel_on_crt(&mut crt, &cycle, &x);
+                // End the current cycle
+                cycle += 1;
+            }
+            "addx" => {
+                for i in 0..2 {
+                    // Start current cycle and draw pixel in crt.
+                    draw_pixel_on_crt(&mut crt, &cycle, &x);
+                    // End the current cycle
+                    cycle += 1;
+                    // Add value to X only AFTER the second cycle of addx
+                    if i == 1 {
+                        let value: i64 = line.split_whitespace().last().unwrap().parse().unwrap();
+                        x += value;
+                    }
+                }
+            }
+            _ => panic!("Unknown instruction '{}'", instruction),
+        }
+    }
+    crt
+}
+
 fn main() {
     let fname = String::from("data/input");
 
@@ -84,6 +124,10 @@ fn main() {
     println!("Solution to part 1: {}", result);
 
     // // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2:");
+    for i in 0..6 {
+        let crt: String = result[40 * i..40 * (i + 1)].iter().cloned().collect();
+        println!("{}", crt);
+    }
 }
