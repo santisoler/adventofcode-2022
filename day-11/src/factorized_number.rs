@@ -254,3 +254,29 @@ impl Sub for Factorized {
         maximum_common_divisor * diff_of_residues
     }
 }
+
+#[derive(Debug)]
+struct VecFactorized(Vec<Factorized>);
+
+impl VecFactorized {
+    fn new() -> VecFactorized {
+        VecFactorized(Vec::new())
+    }
+
+    fn add(&mut self, elem: Factorized) {
+        self.0.push(elem);
+    }
+}
+
+// and we'll implement FromIterator
+impl FromIterator<Factorized> for VecFactorized {
+    fn from_iter<I: IntoIterator<Item=Factorized>>(iter: I) -> Self {
+        let mut c = VecFactorized::new();
+
+        for i in iter {
+            c.add(i);
+        }
+
+        c
+    }
+}
