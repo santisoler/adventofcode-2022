@@ -1,5 +1,7 @@
 mod io;
 mod monkeys;
+mod smart_monkeys;
+mod factorized_number;
 
 #[cfg(test)]
 mod tests {
@@ -11,6 +13,13 @@ mod tests {
         let result = solve_part1(&fname);
         assert_eq!(result, 10605);
     }
+
+    // #[test]
+    // fn test_part2() {
+    //     let fname = String::from("data/test_input");
+    //     let result = solve_part2(&fname);
+    //     assert_eq!(result, 2713310158);
+    // }
 }
 
 fn solve_part1(fname: &String) -> u32 {
