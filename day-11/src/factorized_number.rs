@@ -1,6 +1,8 @@
-use std::cmp;
-use std::collections::HashMap;
-use std::ops::{Add, Mul, Sub};
+use std::cmp::min;
+use std::{
+    collections::HashMap,
+    ops::{Add, Mul, Sub},
+};
 
 #[cfg(test)]
 mod tests {
@@ -15,180 +17,95 @@ mod tests {
     }
 
     #[test]
-    fn test_factorize() {
-        let value: u32 = 64;
-        let mut expected: HashMap<u32, u32> = HashMap::new();
-        expected.insert(2, 6);
-        assert_eq!(factorize(&value).factors, expected);
-        let value: u32 = 77;
-        let mut expected: HashMap<u32, u32> = HashMap::new();
-        expected.insert(7, 1);
-        expected.insert(11, 1);
-        assert_eq!(factorize(&value).factors, expected);
-        let value: u32 = 72;
-        let mut expected: HashMap<u32, u32> = HashMap::new();
-        expected.insert(2, 3);
-        expected.insert(3, 2);
-        assert_eq!(factorize(&value).factors, expected);
+    fn test_from() {
+        //
+        let mut expected = Factorized {
+            factors: HashMap::new(),
+        };
+        expected.factors.insert(2, 6);
+        assert_eq!(Factorized::from(&64), expected);
+        //
+        let mut expected = Factorized {
+            factors: HashMap::new(),
+        };
+        expected.factors.insert(7, 1);
+        expected.factors.insert(11, 1);
+        assert_eq!(Factorized::from(&77), expected);
+        //
+        let mut expected = Factorized {
+            factors: HashMap::new(),
+        };
+        expected.factors.insert(2, 3);
+        expected.factors.insert(3, 2);
+        assert_eq!(Factorized::from(&72), expected);
+        //
+        let expected = Factorized {
+            factors: HashMap::new(),
+        };
+        assert_eq!(Factorized::from(&1), expected);
     }
 
     #[test]
     fn test_clean() {
-        let mut factors: HashMap<u32, u32> = HashMap::new();
-        factors.insert(2, 3);
-        factors.insert(3, 2);
-        factors.insert(5, 0);
-        let mut number = FactorizedNumber { factors };
-        number.clean();
-        let mut expected: HashMap<u32, u32> = HashMap::new();
-        expected.insert(2, 3);
-        expected.insert(3, 2);
-        assert_eq!(number.factors, expected);
+        let mut number = Factorized::from(&64);
+        let expected = number.clone();
+        number.factors.insert(5, 0);
+        number.clean_factors();
+        assert_eq!(number, expected);
+        //
+        let mut number = Factorized::from(&72);
+        let expected = number.clone();
+        number.clean_factors();
+        assert_eq!(number, expected);
     }
 
     #[test]
-    fn test_to_int() {
-        let original: u32 = 30;
-        let n = factorize(&original);
-        assert_eq!(n.to_int(), original);
+    fn test_to_integer() {
+        let value = 64;
+        let number = Factorized::from(&value);
+        assert_eq!(number.to_integer(), value);
+        //
+        let value = 72;
+        let number = Factorized::from(&value);
+        assert_eq!(number.to_integer(), value);
+        //
+        let value = 1;
+        let number = Factorized::from(&value);
+        assert_eq!(number.to_integer(), value);
     }
 
     #[test]
     fn test_mul_trait() {
-        let a = factorize(&30);
-        let b = factorize(&72);
-        let c = &a * &b;
-        assert_eq!(c.to_int(), 30 * 72);
+        let a = Factorized::from(&30);
+        let b = Factorized::from(&72);
+        let c = a * b;
+        assert_eq!(c.to_integer(), 30 * 72);
     }
 
     #[test]
     fn test_add_trait() {
-        let a = factorize(&30);
-        let b = factorize(&72);
-        let c = &a + &b;
-        assert_eq!(c.to_int(), 30 + 72);
+        let a = Factorized::from(&30);
+        let b = Factorized::from(&72);
+        let c = a + b;
+        assert_eq!(c.to_integer(), 30 + 72);
     }
 
     #[test]
     fn test_sub_trait() {
-        let a = factorize(&72);
-        let b = factorize(&30);
-        let c = &a - &b;
-        assert_eq!(c.to_int(), 72 - 30);
+        let a = Factorized::from(&72);
+        let b = Factorized::from(&30);
+        let c = a - b;
+        assert_eq!(c.to_integer(), 72 - 30);
+        let a = Factorized::from(&30);
+        let b = Factorized::from(&15);
+        let c = a - b;
+        assert_eq!(c.to_integer(), 30 - 15);
     }
 }
 
-#[derive(Debug)]
-pub struct FactorizedNumber {
-    // Represent an int by its factors through a hashmap.
-    //
-    // The keys of the hashmap are the primes factors of the integer and the values are the
-    // corresponding power for each factor.
-    factors: HashMap<u32, u32>,
-}
-
-impl FactorizedNumber {
-    pub fn to_int(&self) -> u32 {
-        // Converts factorized number to int
-        defactorize(&self.factors)
-    }
-
-    pub fn clean(&mut self) {
-        // Removes any factors that have a zero power
-        clean(&mut self.factors);
-    }
-}
-
-impl Mul<&FactorizedNumber> for &FactorizedNumber {
-    // Implement the Mul trait for FactorizedNumber
-    type Output = FactorizedNumber;
-
-    fn mul(self, other: &FactorizedNumber) -> FactorizedNumber {
-        let mut factors = self.factors.clone();
-        for (prime, power) in other.factors.iter() {
-            factors
-                .entry(*prime)
-                .and_modify(|p| *p += *power)
-                .or_insert(1);
-        }
-        FactorizedNumber { factors }
-    }
-}
-
-impl Add<&FactorizedNumber> for &FactorizedNumber {
-    // Implement the Add trait for FactorizedNumber
-    type Output = FactorizedNumber;
-
-    fn add(self, other: &FactorizedNumber) -> FactorizedNumber {
-        let mut a = self.factors.clone();
-        let mut b = other.factors.clone();
-        let mut common_factor: HashMap<u32, u32> = HashMap::new();
-        let common_primes: Vec<&u32> = self
-            .factors
-            .keys()
-            .filter(|f| other.factors.contains_key(f))
-            .collect();
-        for prime in common_primes.iter() {
-            let minimum: i32 = cmp::min(
-                a.get(prime).unwrap().to_owned() as i32,
-                b.get(prime).unwrap().to_owned() as i32,
-            );
-            common_factor.insert(**prime, minimum as u32);
-            a.entry(**prime).and_modify(|p| *p -= minimum as u32);
-            b.entry(**prime).and_modify(|p| *p -= minimum as u32);
-        }
-        // Remove any null power from a and b
-        clean(&mut a);
-        clean(&mut b);
-        // Create FactorizedNumber for the common_factor and for the rest
-        let rest = factorize(&(defactorize(&a) + defactorize(&b)));
-        let common_factor = FactorizedNumber {
-            factors: common_factor,
-        };
-        // Return the multiplication of both
-        &rest * &common_factor
-    }
-}
-
-impl Sub<&FactorizedNumber> for &FactorizedNumber {
-    // Implement the Sub trait for FactorizedNumber
-    type Output = FactorizedNumber;
-
-    fn sub(self, other: &FactorizedNumber) -> FactorizedNumber {
-        let mut a = self.factors.clone();
-        let mut b = other.factors.clone();
-        let mut common_factor: HashMap<u32, u32> = HashMap::new();
-        let common_primes: Vec<&u32> = self
-            .factors
-            .keys()
-            .filter(|f| other.factors.contains_key(f))
-            .collect();
-        for prime in common_primes.iter() {
-            let minimum: i32 = cmp::min(
-                a.get(prime).unwrap().to_owned() as i32,
-                b.get(prime).unwrap().to_owned() as i32,
-            );
-            common_factor.insert(**prime, minimum as u32);
-            a.entry(**prime).and_modify(|p| *p -= minimum as u32);
-            b.entry(**prime).and_modify(|p| *p -= minimum as u32);
-        }
-        // Remove any null power from a and b
-        clean(&mut a);
-        clean(&mut b);
-        // Create FactorizedNumber for the common_factor and for the rest
-        let rest = factorize(&(defactorize(&a) - defactorize(&b)));
-        let common_factor = FactorizedNumber {
-            factors: common_factor,
-        };
-        // Return the multiplication of both
-        &rest * &common_factor
-    }
-}
-
-fn build_primes(max: &u32) -> Vec<u32> {
-    // Build a list of all primes lower or equal than 'max'
-    let mut primes: Vec<u32> = vec![2];
-    for n in 3..max + 1 {
+fn build_primes(n: &u32) -> Vec<u32> {
+    let mut primes = vec![2];
+    for n in 3..n + 1 {
         if primes.iter().all(|p| n % p != 0) {
             primes.push(n);
         }
@@ -196,42 +113,144 @@ fn build_primes(max: &u32) -> Vec<u32> {
     primes
 }
 
-fn factorize(number: &u32) -> FactorizedNumber {
-    // Factorize a number into its prime factors
-    let primes = build_primes(&number);
-    let mut tmp = *number;
-    let mut factors: HashMap<u32, u32> = HashMap::new();
-    while tmp != 1 {
-        for prime in primes.iter() {
-            if tmp % prime == 0 {
-                tmp /= prime;
-                factors
-                    .entry(*prime)
-                    .and_modify(|power| *power += 1)
-                    .or_insert(1);
-                break;
-            }
+#[derive(Debug)]
+pub struct Factorized {
+    factors: HashMap<u32, u32>,
+}
+
+impl Factorized {
+    pub fn new() -> Factorized {
+        Factorized {
+            factors: HashMap::new(),
         }
     }
-    FactorizedNumber { factors }
-}
 
-fn defactorize(number: &HashMap<u32, u32>) -> u32 {
-    let mut result: u32 = 1;
-    for (prime, power) in number.iter() {
-        result *= prime.pow(*power);
+    pub fn from(number: &u32) -> Factorized {
+        if *number == 1 {
+            return Factorized {
+                factors: HashMap::new(),
+            };
+        }
+        let mut factors = HashMap::new();
+        let mut number = number.clone();
+        while number != 1 {
+            for prime in build_primes(&number).iter() {
+                if number % prime == 0 {
+                    factors.entry(*prime).and_modify(|p| *p += 1).or_insert(1);
+                    number /= prime;
+                    break;
+                }
+            }
+        }
+        Factorized { factors }
     }
-    result
+
+    pub fn to_integer(&self) -> u32 {
+        let mut result = 1;
+        for (factor, power) in self.factors.iter() {
+            result *= factor.pow(*power);
+        }
+        result
+    }
+
+    pub fn is_divisible_by(&self, number: &u32) -> bool {
+        match self.factors.get(&number) {
+            Some(power) => match power {
+                0 => false,
+                _ => true,
+            },
+            None => false,
+        }
+    }
+
+    fn clean_factors(&mut self) {
+        self.factors.retain(|_, power| *power != 0);
+    }
 }
 
-fn clean(number: &mut HashMap<u32, u32>) {
-    // Removes any factors that have a zero power
-    let null_powers: Vec<u32> = number
-        .keys()
-        .filter(|p| *number.get(p).unwrap() == 0)
-        .cloned()
-        .collect();
-    for key in null_powers.iter() {
-        number.remove(key);
+impl PartialEq for Factorized {
+    fn eq(&self, other: &Self) -> bool {
+        self.factors == other.factors
+    }
+}
+
+impl Clone for Factorized {
+    fn clone(&self) -> Self {
+        Self {
+            factors: self.factors.clone(),
+        }
+    }
+}
+
+impl Mul for Factorized {
+    // The multiplication of factorized numbers is a closed operation.
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        let mut product = self.clone();
+        for (factor, power) in other.factors.iter() {
+            product.factors.entry(*factor).and_modify(|p| *p += *power).or_insert(*power);
+        }
+        product
+    }
+}
+
+impl Add for Factorized {
+    // The add of factorized numbers is a closed operation.
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        // Find the maximum common divisor between self and other
+        let maximum_common_divisor = Self {
+            factors: self
+                .factors
+                .iter()
+                .filter(|(k, _)| other.factors.contains_key(k))
+                .map(|(k, v)| (k.clone(), min(other.factors.get(k).unwrap(), v).clone()))
+                .collect(),
+        };
+        // Remove the maximum common divisor from self and other (need to clone both because they
+        // are not mutable)
+        let mut a = self.clone();
+        let mut b = other.clone();
+        for (factor, power) in maximum_common_divisor.factors.iter() {
+            a.factors.entry(*factor).and_modify(|p| *p -= *power);
+            b.factors.entry(*factor).and_modify(|p| *p -= *power);
+        }
+        a.clean_factors();
+        b.clean_factors();
+        // Sum the residues of a and b as ints and then factorize the result
+        let sum_of_residues = Factorized::from(&(a.to_integer() + b.to_integer()));
+        maximum_common_divisor * sum_of_residues
+    }
+}
+
+impl Sub for Factorized {
+    // The add of factorized numbers is a closed operation.
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        // Find the maximum common divisor between self and other
+        let maximum_common_divisor = Self {
+            factors: self
+                .factors
+                .iter()
+                .filter(|(k, _)| other.factors.contains_key(k))
+                .map(|(k, v)| (k.clone(), min(other.factors.get(k).unwrap(), v).clone()))
+                .collect(),
+        };
+        // Remove the maximum common divisor from self and other (need to clone both because they
+        // are not mutable)
+        let mut a = self.clone();
+        let mut b = other.clone();
+        for (factor, power) in maximum_common_divisor.factors.iter() {
+            a.factors.entry(*factor).and_modify(|p| *p -= *power);
+            b.factors.entry(*factor).and_modify(|p| *p -= *power);
+        }
+        a.clean_factors();
+        b.clean_factors();
+        // Compute difference of the residues of a and b as ints and then factorize the result
+        let diff_of_residues = Factorized::from(&(a.to_integer() - b.to_integer()));
+        maximum_common_divisor * diff_of_residues
     }
 }
