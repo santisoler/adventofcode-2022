@@ -49,12 +49,12 @@ mod tests {
         assert_eq!(result, 31);
     }
 
-    // #[test]
-    // fn test_part2() {
-    //     let fname = String::from("data/test_input");
-    //     let result = solve_part2(&fname);
-    //     assert_eq!(result, 2713310158);
-    // }
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 29);
+    }
 }
 
 fn read_file(fname: &String) -> String {
@@ -155,9 +155,8 @@ impl Ord for Point {
     }
 }
 
-fn solve_part1(fname: &String) -> u64 {
-    // Parse file
-    let (topo, start, end) = parse_file(&fname);
+fn get_shortest_path(topo: &Vec<Vec<u64>>, start: &[usize; 2], end: &[usize; 2]) -> Option<u64> {
+    // Get shortest path from start to end using Dijkstra's algorithm
     let ncols = topo[0].len();
     let nrows = topo.len();
 
@@ -184,7 +183,7 @@ fn solve_part1(fname: &String) -> u64 {
         let point = heap.pop().unwrap();
         // End the loop if we have arrived to the goal
         if point.row == end[0] && point.col == end[1] {
-            return point.steps;
+            return Some(point.steps);
         }
         // Mark the current point as visited
         visited[point.row][point.col] = true;
@@ -205,8 +204,43 @@ fn solve_part1(fname: &String) -> u64 {
             }
         }
     }
-    println!("Couldn't reach the goal");
-    0
+    None
+}
+
+fn solve_part1(fname: &String) -> u64 {
+    // Parse file
+    let (topo, start, end) = parse_file(&fname);
+    // Get shortest path from start to end
+    match get_shortest_path(&topo, &start, &end) {
+        Some(result) => return result,
+        None => panic!("Couln't find shortest path"),
+    }
+}
+
+fn solve_part2(fname: &String) -> u64 {
+    // Parse file
+    let (topo, _, end) = parse_file(&fname);
+    let ncols = topo[0].len();
+    let nrows = topo.len();
+    // Define variable for storing the number of steps for the shortest path of all
+    let mut minimum_steps = u64::MAX;
+    for row in 0..nrows {
+        for col in 0..ncols {
+            // Only consider starting points with zero height
+            if topo[row][col] == 0 {
+                // Compute the number of minimum steps to reach the goal
+                // (ignore this starting point if there isn't a way to get to the end through it)
+                let steps = match get_shortest_path(&topo, &[row, col], &end) {
+                    Some(result) => result,
+                    None => continue,
+                };
+                if steps < minimum_steps {
+                    minimum_steps = steps;
+                }
+            }
+        }
+    }
+    minimum_steps
 }
 
 fn main() {
@@ -218,6 +252,6 @@ fn main() {
     println!("Solution to part 1: {}", result);
 
     // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
