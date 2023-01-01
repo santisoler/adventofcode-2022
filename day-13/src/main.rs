@@ -69,9 +69,16 @@ mod tests {
         let result = solve_part1(&fname);
         assert_eq!(result, 13);
     }
+
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 140);
+    }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord)]
 pub enum Packet {
     Integer(u64),
     List(Vec<Self>),
@@ -166,15 +173,36 @@ pub fn solve_part1(fname: &String) -> u64 {
     sum_of_indices as u64
 }
 
+pub fn solve_part2(fname: &String) -> u64 {
+    // Read file
+    let content = read_file(&fname);
+    // Create a list of all the packets in the input file
+    let mut packets: Vec<Packet> = content
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|l| Packet::from(&l))
+        .collect();
+    // Insert the two divider packets into the list
+    let divider_two = Packet::from("[[2]]");
+    let divider_six = Packet::from("[[6]]");
+    packets.push(divider_two.clone());
+    packets.push(divider_six.clone());
+    // Sort the packets
+    packets.sort();
+    // Find indices of the two divider packets
+    let position_two = packets.iter().position(|p| *p == divider_two).unwrap() + 1;
+    let position_six = packets.iter().position(|p| *p == divider_six).unwrap() + 1;
+    (position_two * position_six) as u64
+}
+
 fn main() {
     let fname = String::from("data/input");
-    // let fname = String::from("data/test_input");
 
     // part 1
     let result = solve_part1(&fname);
     println!("Solution to part 1: {}", result);
 
     // part 2
-    // let result = solve_part2(&fname);
-    // println!("Solution to part 2: {}", result);
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
