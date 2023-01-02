@@ -33,6 +33,13 @@ mod tests {
         let result = solve_part1(&fname);
         assert_eq!(result, 24);
     }
+
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 93);
+    }
 }
 
 #[derive(Debug)]
@@ -53,10 +60,21 @@ impl Subsurface {
     }
 
     pub fn add_sand_grain(&mut self, grain: &SandGrain) {
-        // Adds a restingsand grain to the subsurface
-        match self.0.get_mut(&grain.0[0]) {
-            Some(column) => column[grain.0[1] as usize] = true,
-            None => panic!("aaah"),
+        // Adds a resting sand grain to the subsurface
+        let x = grain.0[0];
+        let y = grain.0[1];
+        match self.0.get_mut(&x) {
+            Some(column) => {
+                if column.len() < y as usize + 1 {
+                    column.extend(vec![false; y as usize + 1 - column.len()]);
+                }
+                column[y as usize] = true;
+            }
+            None => {
+                let mut column = vec![false; y as usize + 1];
+                column[y as usize] = true;
+                self.0.insert(x.clone(), column);
+            }
         }
     }
 
@@ -207,10 +225,47 @@ pub fn solve_part1(fname: &String) -> u64 {
     }
 }
 
+pub fn solve_part2(fname: &String) -> u64 {
+    // Parse file and create subsurface structure
+    let mut subsurface = parse_file(&fname);
+    // Get the deepest level of the subsurface structure
+    let deepest_level = subsurface.get_deepest_level();
+    // Define the depth to the floor
+    let floor_depth = deepest_level + 2;
+    // Define default pouring point
+    let pouring_point = [500, 0];
+    // Initialize counter for number of resting sand grains
+    let mut resting_sand_grains: u64 = 0;
+    // Start dropping sand grains
+    loop {
+        let mut sand_grain = SandGrain(pouring_point.clone());
+        loop {
+            // Try to move the sand grain (it moves one step if it's possible, otherwise it stays
+            // there and returns false)
+            let has_moved = sand_grain.try_move(&subsurface);
+            // Check if the sand grain hasn't moved or if it hit the position right above the
+            // floor. In any one of these two cases, put the sand grain to rest.
+            if !has_moved || sand_grain.0[1] == floor_depth - 1 {
+                subsurface.add_sand_grain(&sand_grain);
+                resting_sand_grains += 1;
+                // Check if it's resting in the pouring point
+                if sand_grain.0 == pouring_point {
+                    return resting_sand_grains;
+                }
+                break;
+            }
+        }
+    }
+}
+
 fn main() {
     let fname = String::from("data/input");
 
     // part 1
     let result = solve_part1(&fname);
     println!("Solution to part 1: {}", result);
+
+    // part 2
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
