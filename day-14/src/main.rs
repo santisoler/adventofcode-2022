@@ -1,9 +1,31 @@
+use std::collections::HashMap;
 use std::io::Read;
 use std::{fs::File, path::Path};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_add_vertical_line() {
+        let mut sub = Subsurface::new();
+        sub.add_vertical_line(&500, &1, &3);
+        sub.add_vertical_line(&500, &5, &10);
+        let expected_grid = vec![
+            false, true, true, true, false, true, true, true, true, true, true,
+        ];
+        assert_eq!(*sub.0.get(&500).unwrap(), expected_grid);
+    }
+
+    #[test]
+    fn test_add_horizontal_line() {
+        let mut sub = Subsurface::new();
+        sub.add_horizontal_line(&2, &499, &501);
+        let expected_grid = vec![false, false, true];
+        for x in [499, 500, 501].iter() {
+            assert_eq!(*sub.0.get(&x).unwrap(), expected_grid);
+        }
+    }
 
     #[test]
     fn test_part1() {
@@ -14,48 +36,92 @@ mod tests {
 }
 
 #[derive(Debug)]
-struct Subsurface(Vec<[u64; 2]>);
+struct Subsurface(HashMap<u64, Vec<bool>>);
 
 impl Subsurface {
-    fn new() -> Self {
-        Self(vec![])
+    pub fn new() -> Self {
+        Self(HashMap::new())
     }
 
-    fn add_rock_line(&mut self, start: &[u64; 2], end: &[u64; 2]) {
+    pub fn add_rock_segment(&mut self, start: &[u64; 2], end: &[u64; 2]) {
         if start[0] == end[0] {
-            let mut bounds = [start[1], end[1]];
-            bounds.sort();
-            for i in bounds[0]..bounds[1] + 1 {
-                self.0.push([start[0], i])
+            self.add_vertical_line(&start[0], &start[1], &end[1])
+        }
+        if start[1] == end[1] {
+            self.add_horizontal_line(&start[1], &start[0], &end[0])
+        }
+    }
+
+    pub fn add_sand_grain(&mut self, grain: &SandGrain) {
+        // Adds a restingsand grain to the subsurface
+        match self.0.get_mut(&grain.0[0]) {
+            Some(column) => column[grain.0[1] as usize] = true,
+            None => panic!("aaah"),
+        }
+    }
+
+    pub fn is_blocked(&self, position: &[u64; 2]) -> bool {
+        // Return true if the given position is currently blocked by a rock unit or a sand grain
+        let x = position[0];
+        let y = position[1];
+        match self.0.get(&x) {
+            Some(column) => {
+                if column.len() < y as usize + 1 {
+                    false // return false if there is no strucure below that point for this column
+                } else {
+                    column[y as usize] // return the bool stored in that position of the grid
+                }
             }
-        } else if start[1] == end[1] {
-            let mut bounds = [start[0], end[0]];
-            bounds.sort();
-            for i in bounds[0]..bounds[1] + 1 {
-                self.0.push([i, start[1]])
+            None => false, // return false if the column isn't registered yet in the subsurface
+        }
+    }
+
+    pub fn get_deepest_level(&self) -> u64 {
+        // Return the maximum depth of the current subsurface
+        let mut deepest_level = 0;
+        for (_, column) in self.0.iter() {
+            if column.len() > deepest_level + 1 {
+                deepest_level = column.len() - 1
+            }
+        }
+        deepest_level as u64
+    }
+
+    fn add_vertical_line(&mut self, x: &u64, y1: &u64, y2: &u64) {
+        // Add a single vertical line segment to the subsurface
+        let (ymin, ymax) = match y1 < y2 {
+            true => (*y1, *y2),
+            false => (*y2, *y1),
+        };
+        let column = self.0.entry(x.clone()).or_insert(vec![]);
+        if column.len() < ymax as usize + 1 {
+            column.extend(vec![false; ymax as usize + 1 - column.len()])
+        }
+        for depth in 0..column.len() {
+            if ymin <= depth as u64 && depth as u64 <= ymax {
+                column[depth] = true;
             }
         }
     }
 
-    fn add_sand_grain(&mut self, grain: &SandGrain) {
-        // Adds a restingsand grain to the subsurface
-        self.0.push(grain.0.clone())
-    }
-
-    fn is_blocked(&self, position: &[u64; 2]) -> bool {
-        // Return true if the given position is currently blocked by a rock unit or a sand grain
-        self.0.contains(position)
-    }
-
-    fn get_deepest_level(&self) -> u64 {
-        // Return the maximum depth of the current subsurface
-        let y: Vec<u64> = self.0.iter().map(|x| x[1]).collect();
-        *y.iter().max().unwrap()
+    fn add_horizontal_line(&mut self, y: &u64, x1: &u64, x2: &u64) {
+        // Add a single horizontal line segment to the subsurface
+        let (xmin, xmax) = match x1 < x2 {
+            true => (*x1, *x2),
+            false => (*x2, *x1),
+        };
+        for x in xmin..xmax + 1 {
+            let column = self.0.entry(x.clone()).or_insert(vec![]);
+            if column.len() < *y as usize + 1 {
+                column.extend(vec![false; *y as usize + 1 - column.len()])
+            }
+            column[*y as usize] = true;
+        }
     }
 }
 
 struct SandGrain([u64; 2]);
-
+//
 impl SandGrain {
     fn try_move(&mut self, subsurface: &Subsurface) -> bool {
         // Move the sandgrain one time interval. Return true if it has moved, return false if not.
@@ -105,7 +171,7 @@ fn parse_file(fname: &String) -> Subsurface {
             points.push([point[0], point[1]]);
         }
         for i in 0..points.len() - 1 {
-            subsurface.add_rock_line(&points[i], &points[i + 1])
+            subsurface.add_rock_segment(&points[i], &points[i + 1])
         }
     }
     subsurface
