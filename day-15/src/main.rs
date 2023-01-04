@@ -1,5 +1,6 @@
 use std::cmp::max;
 use std::io::Read;
+use std::time::Instant;
 use std::{fs::File, path::Path};
 
 #[cfg(test)]
@@ -365,10 +366,16 @@ fn main() {
     let fname = String::from("data/input");
 
     // part 1
+    let now = Instant::now();
     let result = solve_part1(&fname, 2000000);
+    let elapsed = now.elapsed();
     println!("Solution to part 1: {}", result);
+    println!("Elapsed time: {}µs", elapsed.as_micros());
 
     // part 2
+    let now = Instant::now();
     let result = solve_part2(&fname);
+    let elapsed = now.elapsed();
     println!("Solution to part 2: {}", result);
+    println!("Elapsed time: {}µs", elapsed.as_micros());
 }
