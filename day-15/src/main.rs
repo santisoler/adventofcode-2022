@@ -29,13 +29,11 @@ mod tests {
     fn test_merge_ranges() {
         let ranges = vec![[2, 10], [2, 14], [14, 18]];
         let merged = merge_ranges(&ranges);
-        println!("{:?}", merged);
         assert!(merged.len() == 1);
         assert_eq!(merged[0][0], 2);
         assert_eq!(merged[0][1], 18);
         let ranges = vec![[2, 10], [11, 14], [16, 18]];
         let merged = merge_ranges(&ranges);
-        println!("{:?}", merged);
         assert!(merged.len() == 3);
         assert_eq!(merged[0][0], 2);
         assert_eq!(merged[0][1], 10);
@@ -46,10 +44,46 @@ mod tests {
     }
 
     #[test]
+    fn test_rotate() {
+        let mut point = Point::from(&[1, 1]);
+        point.rotate();
+        assert_eq!(point.x, 0);
+        assert_eq!(point.y, 2);
+        let mut point = Point::from(&[1, 0]);
+        point.rotate();
+        assert_eq!(point.x, 1);
+        assert_eq!(point.y, 1);
+        let mut point = Point::from(&[0, 1]);
+        point.rotate();
+        assert_eq!(point.x, -1);
+        assert_eq!(point.y, 1);
+        let mut point = Point::from(&[2, 1]);
+        point.rotate();
+        assert_eq!(point.x, 1);
+        assert_eq!(point.y, 3);
+    }
+
+    #[test]
+    fn test_rotate_rev() {
+        let mut point = Point::from(&[2, 1]);
+        let expected = point.clone();
+        point.rotate();
+        point.rotate_reverse();
+        assert_eq!(point, expected);
+    }
+
+    #[test]
     fn test_part1() {
         let fname = String::from("data/test_input");
         let result = solve_part1(&fname, 10);
         assert_eq!(result, 26);
+    }
+
+    #[test]
+    fn test_part2() {
+        let fname = String::from("data/test_input");
+        let result = solve_part2(&fname);
+        assert_eq!(result, 56000011);
     }
 }
 
@@ -80,6 +114,41 @@ impl Point {
         Point {
             x: position[0],
             y: position[1],
+        }
+    }
+
+    pub fn rotate(&mut self) {
+        // Rotate the point 45 CW degrees and scale to keep them as ints
+        let x = self.x.clone();
+        let y = self.y.clone();
+        self.x = x - y;
+        self.y = x + y;
+    }
+
+    pub fn rotate_reverse(&mut self) {
+        // Rotate the point 45 degrees CCW and scale to keep them as ints
+        let x = self.x.clone();
+        let y = self.y.clone();
+        self.x = (x + y) / 2;
+        self.y = (-x + y) / 2;
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Area {
+    x1: i64,
+    x2: i64,
+    y1: i64,
+    y2: i64,
+}
+
+impl Area {
+    pub fn from(x1: &i64, x2: &i64, y1: &i64, y2: &i64) -> Self {
+        Area {
+            x1: *x1,
+            x2: *x2,
+            y1: *y1,
+            y2: *y2,
         }
     }
 }
@@ -209,10 +278,97 @@ pub fn solve_part1(fname: &String, row: i64) -> i64 {
     n_positions
 }
 
+pub fn solve_part2(fname: &String) -> i64 {
+    // Read file content
+    let content = read_file(&fname);
+    // Parse file
+    let mut sensors: Vec<Point> = vec![];
+    let mut distances_to_beacons: Vec<i64> = vec![];
+    for line in content.lines() {
+        let (sensor, beacon) = parse_line(&line);
+        let sensor = Point::from(&sensor);
+        let beacon = Point::from(&beacon);
+        distances_to_beacons.push(get_distance(&sensor, &beacon));
+        sensors.push(sensor);
+    }
+    // Rotate the sensor locations so the areas covered by each one are now squares
+    let mut rotated_sensors = sensors.clone();
+    for sensor in rotated_sensors.iter_mut() {
+        sensor.rotate();
+    }
+    // Define areas of coverage for each sensor
+    let mut areas = Vec::<Area>::new();
+    for (sensor, dist) in rotated_sensors.iter().zip(distances_to_beacons.clone()) {
+        let x1 = sensor.x - dist;
+        let x2 = sensor.x + dist;
+        let y1 = sensor.y - dist;
+        let y2 = sensor.y + dist;
+        areas.push(Area { x1, x2, y1, y2 })
+    }
+    // Find pairs of area boundaries that leave a space in between
+    let mut x_candidates: Vec<i64> = vec![];
+    areas.sort_by(|a, b| a.x1.cmp(&b.x1)); // sort areas by x1
+    for i in 0..areas.len() - 1 {
+        for j in i..areas.len() {
+            if areas[i].x2 + 2 == areas[j].x1 {
+                x_candidates.push(areas[i].x2 + 1)
+            }
+        }
+    }
+    let mut y_candidates: Vec<i64> = vec![];
+    areas.sort_by(|a, b| a.y1.cmp(&b.y1)); // sort areas by y1
+    for i in 0..areas.len() - 1 {
+        for j in i..areas.len() {
+            if areas[i].y2 + 2 == areas[j].y1 {
+                y_candidates.push(areas[i].y2 + 1)
+            }
+        }
+    }
+    // Unrotate the candidates
+    let mut points: Vec<Point> = vec![];
+    for x in x_candidates.iter() {
+        for y in y_candidates.iter() {
+            points.push(Point { x: *x, y: *y })
+        }
+    }
+    for point in points.iter_mut() {
+        point.rotate_reverse()
+    }
+    // Remove repeated points
+    let mut unique = vec![];
+    for point in points.iter() {
+        if !unique.contains(point) {
+            unique.push(point.clone())
+        }
+    }
+    // Eliminate the points that are already covered by a sensor and keep the only one that could
+    // have a beacon
+    let mut beacon = Point { x: 0, y: 0 };
+    for point in points {
+        let mut is_covered = false;
+        for (sensor, dist) in sensors.iter().zip(distances_to_beacons.clone()) {
+            if get_distance(&sensor, &point) <= dist {
+                is_covered = true;
+                break;
+            }
+        }
+        if !is_covered {
+            beacon = point;
+            break;
+        }
+    }
+    // Return the tuning frequency
+    beacon.x * 4_000_000 + beacon.y
+}
+
 fn main() {
     let fname = String::from("data/input");
 
     // part 1
     let result = solve_part1(&fname, 2000000);
     println!("Solution to part 1: {}", result);
+
+    // part 2
+    let result = solve_part2(&fname);
+    println!("Solution to part 2: {}", result);
 }
